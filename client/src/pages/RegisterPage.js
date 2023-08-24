@@ -8,16 +8,29 @@ import {
   FormLabel,
   FormErrorMessage,
   Text,
+  Alert,
+  AlertDescription,
 } from '@chakra-ui/react';
-import axios from 'axios';
-// https://ecommerce-test.auth.us-east-2.amazoncognito.com/login?response_type=code&client_id=6pidkt6mt2om9qrc7e3lufi79r&redirect_uri=https://www.google.com
+import { Link, useNavigate } from 'react-router-dom';
+
+import {
+  registerUser,
+  verifyUser,
+  resendVerificationCode,
+} from '../services/AuthServices';
+
 function RegisterPage() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
+    email: 'parth.champaneri@hotmail.com',
+    password: 'Password@123',
+    confirmPassword: 'Password@123',
   });
   const [errors, setErrors] = useState({});
+  const [apiError, setApiError] = useState(null);
+
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isVerificationStep, setIsVerificationStep] = useState(false);
 
   const validate = () => {
     const newErrors = {};
@@ -37,40 +50,40 @@ function RegisterPage() {
     e.preventDefault();
     const validationErrors = validate();
     if (Object.keys(validationErrors).length === 0) {
-      console.log(formData);
-      // Call API to register
       try {
-        const response = await axios.post(
-          `https://ecommerce-test.auth.us-east-2.amazoncognito.com/signUp`,
-          {
-            ClientId: '6pidkt6mt2om9qrc7e3lufi79r',
-            Username: formData.email,
-            Password: formData.password,
-            UserAttributes: [
-              {
-                Name: 'email',
-                Value: formData.email,
-              },
-            ],
-          },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*',
-              'Access-Control-Allow-Methods': 'POST',
-              'Access-Control-Allow-Headers': 'Content-Type',
-            },
-          },
-        );
-        console.log('Registration successful:', response.data);
-        // Redirect user to a confirmation page or directly log them in
+        await registerUser(formData.email, formData.password);
+        setIsVerificationStep(true);
       } catch (error) {
-        console.error('Error registering:', error.response.data);
-        // Handle the error, maybe set it in the state to display to the user
+        setApiError(
+          error?.response?.data?.message || 'An unexpected error occurred.',
+        );
       }
       setErrors({});
     } else {
       setErrors(validationErrors);
+    }
+  };
+
+  const handleVerification = async () => {
+    try {
+      await verifyUser(formData.email, verificationCode);
+      navigate('/');
+    } catch (error) {
+      setApiError(
+        error?.response?.data?.message ||
+          'An unexpected error occurred during verification.',
+      );
+    }
+  };
+
+  const handleResendCode = async () => {
+    try {
+      await resendVerificationCode(formData.email);
+    } catch (error) {
+      setApiError(
+        error?.response?.data?.message ||
+          'An unexpected error occurred while resending the code.',
+      );
     }
   };
 
@@ -80,46 +93,109 @@ function RegisterPage() {
         <Box textAlign="center">
           <Text fontSize="2xl">Register</Text>
         </Box>
-        <Box my={4} textAlign="left">
-          <form onSubmit={handleSubmit}>
-            <FormControl isInvalid={errors.email}>
-              <FormLabel>Email</FormLabel>
+
+        {isVerificationStep ? (
+          <Box my={4} textAlign="center">
+            <FormControl>
+              <FormLabel>Verification Code</FormLabel>
               <Input
-                type="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
+                type="text"
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value)}
               />
-              <FormErrorMessage>{errors.email}</FormErrorMessage>
             </FormControl>
-            <FormControl mt={6} isInvalid={errors.password}>
-              <FormLabel>Password</FormLabel>
-              <Input
-                type="password"
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
-              />
-              <FormErrorMessage>{errors.password}</FormErrorMessage>
-            </FormControl>
-            <FormControl mt={6} isInvalid={errors.confirmPassword}>
-              <FormLabel>Confirm Password</FormLabel>
-              <Input
-                type="password"
-                value={formData.confirmPassword}
-                onChange={(e) =>
-                  setFormData({ ...formData, confirmPassword: e.target.value })
-                }
-              />
-              <FormErrorMessage>{errors.confirmPassword}</FormErrorMessage>
-            </FormControl>
-            <Button width="full" mt={4} type="submit" colorScheme="teal">
-              Register
+            {apiError && (
+              <Alert status="error" mt={4}>
+                <AlertDescription>{apiError}</AlertDescription>
+              </Alert>
+            )}
+            <Button
+              width="full"
+              mt={4}
+              onClick={handleVerification}
+              colorScheme="teal"
+            >
+              Verify
             </Button>
-          </form>
-        </Box>
+            <Button
+              mt={6}
+              onClick={handleResendCode}
+              colorScheme="teal"
+              variant="link"
+            >
+              Resend Code
+            </Button>
+            <Button
+              mx={6}
+              as={Link}
+              to="/"
+              colorScheme="teal"
+              variant="outline"
+            >
+              Login
+            </Button>
+          </Box>
+        ) : (
+          <Box my={4} textAlign="center">
+            <form onSubmit={handleSubmit}>
+              <FormControl isInvalid={errors.email}>
+                <FormLabel>Email</FormLabel>
+                <Input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                />
+                <FormErrorMessage>{errors.email}</FormErrorMessage>
+              </FormControl>
+              <FormControl mt={6} isInvalid={errors.password}>
+                <FormLabel>Password</FormLabel>
+                <Input
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
+                />
+                <FormErrorMessage>{errors.password}</FormErrorMessage>
+              </FormControl>
+              <FormControl mt={6} isInvalid={errors.confirmPassword}>
+                <FormLabel>Confirm Password</FormLabel>
+                <Input
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      confirmPassword: e.target.value,
+                    })
+                  }
+                />
+                <FormErrorMessage>{errors.confirmPassword}</FormErrorMessage>
+              </FormControl>
+              {apiError && (
+                <Alert status="error" mt={4}>
+                  <AlertDescription>{apiError}</AlertDescription>
+                </Alert>
+              )}
+
+              <Button width="full" mt={4} type="submit" colorScheme="teal">
+                Register
+              </Button>
+              <Button
+                width="full"
+                my={4}
+                as={Link}
+                to="/"
+                colorScheme="teal"
+                variant="outline"
+              >
+                Login
+              </Button>
+            </form>
+          </Box>
+        )}
       </Box>
     </Flex>
   );
