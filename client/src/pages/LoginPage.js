@@ -8,25 +8,21 @@ import {
   FormLabel,
   FormErrorMessage,
   Text,
+  Alert,
+  AlertDescription,
 } from '@chakra-ui/react';
-import {
-  CognitoUser,
-  AuthenticationDetails,
-  CognitoUserPool,
-} from 'amazon-cognito-identity-js';
-import axios from 'axios';
-const poolData = {
-  UserPoolId: 'us-east-2_9XSZ40qu5',
-  ClientId: '6pidkt6mt2om9qrc7e3lufi79r',
-};
-const userPool = new CognitoUserPool(poolData);
+import { useAuth } from '../AuthContext';
+import { Link } from 'react-router-dom';
+import { loginUser } from '../services/AuthServices';
 
 function LoginPage() {
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: 'parth.champaneri@hotmail.com',
-    password: 'Pass@321',
+    password: 'Password@123',
   });
   const [errors, setErrors] = useState({});
+  const [apiError, setApiError] = useState(null);
 
   const validate = () => {
     const newErrors = {};
@@ -38,37 +34,18 @@ function LoginPage() {
     }
     return newErrors;
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validate();
     if (Object.keys(validationErrors).length === 0) {
-      console.log(formData);
       try {
-        const email = encodeURIComponent(formData.email);
-        const password = encodeURIComponent(formData.password);
-
-        const response = await axios.post(
-          `https://6cl8w2orii.execute-api.us-east-2.amazonaws.com/test/1login`,
-          {
-            ClientId: '6pidkt6mt2om9qrc7e3lufi79r',
-            AuthFlow: 'USER_PASSWORD_AUTH',
-            AuthParameters: {
-              USERNAME: formData.email,
-              PASSWORD: formData.password,
-            },
-          },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          },
-        );
+        const response = await loginUser(formData.email, formData.password);
+        login(response.data.AuthenticationResult.IdToken);
       } catch (error) {
-        console.error('Error logging in:', error.response.data);
-        // Handle the error, maybe set it in the state to display to the user
+        setApiError(
+          error?.response?.data?.message || 'An unexpected error occurred.',
+        );
       }
-      // Call API TO LOGIN
       setErrors({});
     } else {
       setErrors(validationErrors);
@@ -81,7 +58,7 @@ function LoginPage() {
         <Box textAlign="center">
           <Text fontSize="2xl">Login</Text>
         </Box>
-        <Box my={4} textAlign="left">
+        <Box my={4} textAlign="center">
           <form onSubmit={handleSubmit}>
             <FormControl isInvalid={errors.email}>
               <FormLabel>Email</FormLabel>
@@ -105,8 +82,23 @@ function LoginPage() {
               />
               <FormErrorMessage>{errors.password}</FormErrorMessage>
             </FormControl>
+            {apiError && (
+              <Alert status="error" mt={4}>
+                <AlertDescription>{apiError}</AlertDescription>
+              </Alert>
+            )}
             <Button width="full" mt={4} type="submit" colorScheme="teal">
               Login
+            </Button>
+            <Button
+              width="full"
+              my={4}
+              as={Link}
+              to="/register"
+              colorScheme="teal"
+              variant="outline"
+            >
+              Register
             </Button>
           </form>
         </Box>
