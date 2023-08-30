@@ -1,22 +1,26 @@
 import React from 'react';
-import { Box, Flex, Heading, Link, Spacer } from '@chakra-ui/react';
+import { Box, Button, Flex, HStack, Heading, Spacer } from '@chakra-ui/react';
+import { useAuth } from '../services/AuthContext';
 
-function Navbar() {
+const Navigation = () => {
+  const { isAuthenticated, logout } = useAuth();
   return (
-    <Flex as="nav" padding="1.5rem" bg="teal.500" color="white">
-      <Heading size="md">My Website</Heading>
+    <Flex as="nav" px={150} py={4}>
+      <Heading size="lg">the qWoah!</Heading>
       <Spacer />
       <Box display="flex" alignItems="center">
-        <Link marginRight="1rem" href="#">
-          Link 1
-        </Link>
-        <Link marginRight="1rem" href="#">
-          Link 2
-        </Link>
-        <Link href="#">Link 3</Link>
+        <HStack spacing={8}>
+          {isAuthenticated ? (
+            <>
+              <Button onClick={logout} variant="link">
+                Logout
+              </Button>
+            </>
+          ) : null}
+        </HStack>
       </Box>
     </Flex>
   );
-}
+};
 
-export default Navbar;
+export default Navigation;
