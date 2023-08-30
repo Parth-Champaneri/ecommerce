@@ -11,7 +11,7 @@ import {
   Alert,
   AlertDescription,
 } from '@chakra-ui/react';
-import { useAuth } from '../AuthContext';
+import { useAuth } from '../services/AuthContext';
 import { Link } from 'react-router-dom';
 import { loginUser } from '../services/AuthServices';
 
