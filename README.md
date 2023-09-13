@@ -1,6 +1,8 @@
 # E-commerce Web-app
 
-Build a robust E-commerce store using React.
+Build a robust E-commerce store using React. Check it out here d1m0d5egfva42d.cloudfront.net/
+
+Resources
 
 ---
 
